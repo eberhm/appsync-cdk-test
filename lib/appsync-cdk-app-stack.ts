@@ -1,16 +1,39 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as cdk from '@aws-cdk/core';
+import { Stack, StackProps } from '@aws-cdk/core';
+import * as appsync from '@aws-cdk/aws-appsync';
 
 export class AppsyncCdkAppStack extends Stack {
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor(scope: cdk.Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    // Creates the AppSync API
+    const api = new appsync.GraphqlApi(this, 'Api', {
+      name: 'cdk-test-appsync-api',
+      schema: appsync.Schema.fromAsset('graphql/schema.graphql'),
+      authorizationConfig: {
+        defaultAuthorization: {
+          authorizationType: appsync.AuthorizationType.API_KEY,
+          apiKeyConfig: {
+            expires: cdk.Expiration.after(cdk.Duration.days(365))
+          }
+        },
+      },
+      xrayEnabled: true,
+    });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'AppsyncCdkAppQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    // Prints out the AppSync GraphQL endpoint to the terminal
+    new cdk.CfnOutput(this, "GraphQLAPIURL", {
+     value: api.graphqlUrl
+    });
+
+    // Prints out the AppSync GraphQL API key to the terminal
+    new cdk.CfnOutput(this, "GraphQLAPIKey", {
+      value: api.apiKey || ''
+    });
+
+    // Prints out the stack region to the terminal
+    new cdk.CfnOutput(this, "Stack Region", {
+      value: this.region
+    });
   }
 }
